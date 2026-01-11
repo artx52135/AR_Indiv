@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: a29db326a2569e444b4754723fdc5245
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - barkSound: {fileID: 8300000, guid: 31a9f44796a59a140b82fed034650daa, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
