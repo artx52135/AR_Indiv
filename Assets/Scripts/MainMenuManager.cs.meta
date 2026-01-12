@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 4a959a2f16bdfa048924e80764ce1d04
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - mainMenuPanel: {instanceID: 0}
+  - settingsPanel: {instanceID: 0}
+  - startButton: {instanceID: 0}
+  - settingsButton: {instanceID: 0}
+  - backButton: {instanceID: 0}
+  - quitButton: {instanceID: 0}
+  - volumeSlider: {instanceID: 0}
+  - debugToggle: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
