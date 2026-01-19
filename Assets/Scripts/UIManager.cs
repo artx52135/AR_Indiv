@@ -9,32 +9,64 @@ public class UIManager : MonoBehaviour
     [Header("UI Elements")]
     [SerializeField] private GameObject loadingPanel;
     [SerializeField] private Button addButton;
-    [SerializeField] private Button backToMenuButton; // ← НОВАЯ КНОПКА!
+    [SerializeField] private Button backToMenuButton;
     [SerializeField] private TextMeshProUGUI loadingText;
+    [SerializeField] private TextMeshProUGUI markersInfoText;
 
     [Header("Manager")]
     [SerializeField] private GeoMarkerManager markerManager;
 
     [Header("Settings")]
     [SerializeField] private float timeoutSeconds = 10f;
-    [SerializeField] private bool skipInitialization = true; // Пропускаем ожидание
+    [SerializeField] private bool skipInitialization = true;
 
     private Coroutine _timeoutCoroutine;
+    private float _updateTimer = 0f;
+    private const float UPDATE_INTERVAL = 1f;
+    private bool _buttonBlocked = false;
+    private float _lastClickTime = 0f;
+    private const float CLICK_COOLDOWN = 1f; // 1 секунда между кликами
 
     void Start()
     {
         Debug.Log("=== AR UIManager Start ===");
 
+        // Ищем менеджер если не назначен
+        if (markerManager == null)
+        {
+            markerManager = FindObjectOfType<GeoMarkerManager>();
+            if (markerManager != null)
+            {
+                Debug.Log($"Найден GeoMarkerManager: {markerManager.gameObject.name}");
+            }
+        }
+
+        // Проверяем текстовый элемент
+        if (markersInfoText != null)
+        {
+            markersInfoText.text = "Инициализация...";
+        }
+
         // Настройка кнопки "В меню"
         if (backToMenuButton != null)
         {
+            backToMenuButton.onClick.RemoveAllListeners();
             backToMenuButton.onClick.AddListener(BackToMainMenu);
             backToMenuButton.gameObject.SetActive(true);
-            Debug.Log("Кнопка 'В меню' настроена");
         }
-        else
+
+        // Настройка кнопки "Добавить" - ОЧИЩАЕМ ВСЕ ПРЕДЫДУЩИЕ СЛУШАТЕЛИ
+        if (addButton != null)
         {
-            Debug.LogError("❌ BackToMenuButton не назначена! Добавьте кнопку в Canvas");
+            Debug.Log("Настройка кнопки Добавить...");
+
+            // ОЧЕНЬ ВАЖНО: удаляем ВСЕ слушатели
+            addButton.onClick.RemoveAllListeners();
+            Debug.Log($"После очистки слушателей: {addButton.onClick.GetPersistentEventCount()}");
+
+            // Добавляем НАШ слушатель
+            addButton.onClick.AddListener(OnAddButtonPressed);
+            Debug.Log($"Добавлен наш слушатель, всего: {addButton.onClick.GetPersistentEventCount()}");
         }
 
         // Инициализация UI
@@ -48,18 +80,11 @@ public class UIManager : MonoBehaviour
     {
         Debug.Log("Инициализация UI...");
 
-        // Если пропустить инициализацию (для теста)
         if (skipInitialization)
         {
             Debug.Log("Пропускаем ожидание инициализации AR");
             ShowUI();
             return;
-        }
-
-        // Проверяем есть ли менеджер
-        if (markerManager == null)
-        {
-            markerManager = FindObjectOfType<GeoMarkerManager>();
         }
 
         if (markerManager != null)
@@ -91,7 +116,6 @@ public class UIManager : MonoBehaviour
             yield return null;
         }
 
-        // Таймаут истек
         Debug.LogWarning("Таймаут инициализации!");
         ForceShowUI();
     }
@@ -119,6 +143,8 @@ public class UIManager : MonoBehaviour
             addButton.gameObject.SetActive(true);
             addButton.interactable = true;
         }
+
+        UpdateMarkersInfo();
     }
 
     private void ForceShowUI()
@@ -137,7 +163,6 @@ public class UIManager : MonoBehaviour
 
     private void ApplySettings()
     {
-        // Громкость
         if (PlayerPrefs.HasKey("Volume"))
         {
             float volume = PlayerPrefs.GetFloat("Volume", 0.7f);
@@ -147,27 +172,72 @@ public class UIManager : MonoBehaviour
 
     public void OnAddButtonPressed()
     {
-        Debug.Log("Добавление маркера...");
+        Debug.Log($"=== НАЖАТИЕ КНОПКИ ДОБАВИТЬ (Time: {Time.time:F2}) ===");
+
+        // ЗАЩИТА №1: Проверяем время с последнего клика
+        if (Time.time - _lastClickTime < CLICK_COOLDOWN)
+        {
+            Debug.Log($"Игнорируем - прошло только {Time.time - _lastClickTime:F2} секунд");
+            return;
+        }
+
+        // ЗАЩИТА №2: Проверяем блокировку
+        if (_buttonBlocked)
+        {
+            Debug.Log("Игнорируем - кнопка заблокирована");
+            return;
+        }
+
+        _lastClickTime = Time.time;
+        _buttonBlocked = true;
 
         if (markerManager != null && markerManager.IsInitialized)
         {
+            Debug.Log("Вызываем AddMarkerAtCurrentLocation");
             markerManager.AddMarkerAtCurrentLocation();
+            UpdateMarkersInfo();
         }
         else
         {
             Debug.LogWarning("AR не инициализирован!");
         }
+
+        // Разблокируем кнопку через 1 секунду
+        StartCoroutine(UnblockButtonAfterDelay(1f));
     }
 
-    // ВОТ ЭТОТ МЕТОД ДЛЯ ВОЗВРАТА В МЕНЮ
+    private IEnumerator UnblockButtonAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        _buttonBlocked = false;
+        Debug.Log("Кнопка разблокирована");
+    }
+
+    private void UpdateMarkersInfo()
+    {
+        if (markersInfoText == null) return;
+
+        if (markerManager == null)
+        {
+            markersInfoText.text = "Лимит: ?\nНа карте: ?\nAR: Нет менеджера";
+            return;
+        }
+
+        try
+        {
+            string info = markerManager.GetMarkersInfoString();
+            markersInfoText.text = info;
+        }
+        catch
+        {
+            markersInfoText.text = "Ошибка загрузки";
+        }
+    }
+
     private void BackToMainMenu()
     {
-        Debug.Log("🔄 Возврат в главное меню...");
-
-        // Сохраняем настройки если нужно
+        Debug.Log("Возврат в главное меню...");
         PlayerPrefs.Save();
-
-        // Загружаем главное меню
         SceneManager.LoadScene("MainMenuScene");
     }
 
@@ -179,7 +249,13 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
-        // Дополнительно: кнопка Escape тоже возвращает в меню
+        _updateTimer += Time.deltaTime;
+        if (_updateTimer >= UPDATE_INTERVAL)
+        {
+            UpdateMarkersInfo();
+            _updateTimer = 0f;
+        }
+
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             BackToMainMenu();

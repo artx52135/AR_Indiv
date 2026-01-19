@@ -80,10 +80,10 @@ public class CompassArrow : MonoBehaviour
     {
         Vector3 toTarget = worldPos - _cam.transform.position;
 
-        // проекци€ на плоскость
+        // €®юхъ≤ш† эр €ыюЄъюЄ•є
         Vector3 flatDir = Vector3.ProjectOnPlane(toTarget, _cam.transform.up).normalized;
 
-        // угол поворота
+        // іуюы €ютю®ю•р
         float angle = Mathf.Atan2(
             Vector3.Dot(flatDir, _cam.transform.right),
             Vector3.Dot(flatDir, _cam.transform.forward)

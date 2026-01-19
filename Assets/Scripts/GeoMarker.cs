@@ -45,7 +45,6 @@ public class GeoMarker : MonoBehaviour
         }
         else
         {
-
             Destroy(gameObject);
         }
     }
