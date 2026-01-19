@@ -25,29 +25,20 @@ public class UIManager : MonoBehaviour
     private const float UPDATE_INTERVAL = 1f;
     private bool _buttonBlocked = false;
     private float _lastClickTime = 0f;
-    private const float CLICK_COOLDOWN = 1f; // 1 секунда между кликами
+    private const float CLICK_COOLDOWN = 1f;
 
     void Start()
     {
-        Debug.Log("=== AR UIManager Start ===");
-
-        // Ищем менеджер если не назначен
         if (markerManager == null)
         {
             markerManager = FindObjectOfType<GeoMarkerManager>();
-            if (markerManager != null)
-            {
-                Debug.Log($"Найден GeoMarkerManager: {markerManager.gameObject.name}");
-            }
         }
 
-        // Проверяем текстовый элемент
         if (markersInfoText != null)
         {
             markersInfoText.text = "Инициализация...";
         }
 
-        // Настройка кнопки "В меню"
         if (backToMenuButton != null)
         {
             backToMenuButton.onClick.RemoveAllListeners();
@@ -55,34 +46,20 @@ public class UIManager : MonoBehaviour
             backToMenuButton.gameObject.SetActive(true);
         }
 
-        // Настройка кнопки "Добавить" - ОЧИЩАЕМ ВСЕ ПРЕДЫДУЩИЕ СЛУШАТЕЛИ
         if (addButton != null)
         {
-            Debug.Log("Настройка кнопки Добавить...");
-
-            // ОЧЕНЬ ВАЖНО: удаляем ВСЕ слушатели
             addButton.onClick.RemoveAllListeners();
-            Debug.Log($"После очистки слушателей: {addButton.onClick.GetPersistentEventCount()}");
-
-            // Добавляем НАШ слушатель
             addButton.onClick.AddListener(OnAddButtonPressed);
-            Debug.Log($"Добавлен наш слушатель, всего: {addButton.onClick.GetPersistentEventCount()}");
         }
 
-        // Инициализация UI
         InitializeUI();
-
-        // Настройки
         ApplySettings();
     }
 
     private void InitializeUI()
     {
-        Debug.Log("Инициализация UI...");
-
         if (skipInitialization)
         {
-            Debug.Log("Пропускаем ожидание инициализации AR");
             ShowUI();
             return;
         }
@@ -94,7 +71,6 @@ public class UIManager : MonoBehaviour
         }
         else
         {
-            Debug.LogError("GeoMarkerManager не найден!");
             ShowUI();
         }
     }
@@ -116,14 +92,11 @@ public class UIManager : MonoBehaviour
             yield return null;
         }
 
-        Debug.LogWarning("Таймаут инициализации!");
         ForceShowUI();
     }
 
     private void OnWPSReady()
     {
-        Debug.Log("✅ AR инициализирован!");
-
         if (_timeoutCoroutine != null)
         {
             StopCoroutine(_timeoutCoroutine);
@@ -172,19 +145,13 @@ public class UIManager : MonoBehaviour
 
     public void OnAddButtonPressed()
     {
-        Debug.Log($"=== НАЖАТИЕ КНОПКИ ДОБАВИТЬ (Time: {Time.time:F2}) ===");
-
-        // ЗАЩИТА №1: Проверяем время с последнего клика
         if (Time.time - _lastClickTime < CLICK_COOLDOWN)
         {
-            Debug.Log($"Игнорируем - прошло только {Time.time - _lastClickTime:F2} секунд");
             return;
         }
 
-        // ЗАЩИТА №2: Проверяем блокировку
         if (_buttonBlocked)
         {
-            Debug.Log("Игнорируем - кнопка заблокирована");
             return;
         }
 
@@ -193,16 +160,10 @@ public class UIManager : MonoBehaviour
 
         if (markerManager != null && markerManager.IsInitialized)
         {
-            Debug.Log("Вызываем AddMarkerAtCurrentLocation");
             markerManager.AddMarkerAtCurrentLocation();
             UpdateMarkersInfo();
         }
-        else
-        {
-            Debug.LogWarning("AR не инициализирован!");
-        }
 
-        // Разблокируем кнопку через 1 секунду
         StartCoroutine(UnblockButtonAfterDelay(1f));
     }
 
@@ -210,7 +171,6 @@ public class UIManager : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         _buttonBlocked = false;
-        Debug.Log("Кнопка разблокирована");
     }
 
     private void UpdateMarkersInfo()
@@ -219,7 +179,7 @@ public class UIManager : MonoBehaviour
 
         if (markerManager == null)
         {
-            markersInfoText.text = "Лимит: ?\nНа карте: ?\nAR: Нет менеджера";
+            markersInfoText.text = "Лимит: ?\nAR: Нет менеджера";
             return;
         }
 
@@ -236,7 +196,6 @@ public class UIManager : MonoBehaviour
 
     private void BackToMainMenu()
     {
-        Debug.Log("Возврат в главное меню...");
         PlayerPrefs.Save();
         SceneManager.LoadScene("MainMenuScene");
     }
